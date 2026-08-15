@@ -1,0 +1,10 @@
+# Node
+node_modules/
+
+# Artefacts de build / secrets
+*.log
+.DS_Store
+.env
+cleAPIgithub
+
+# Caches locaux (data.json est versionné : c'est lui qui alimente le site)

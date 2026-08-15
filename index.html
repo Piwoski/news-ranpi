@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ranpi News — France · Monde · Nucléaire</title>
+<meta name="description" content="Agrégateur d'actualités : titres en VO, filtres par source et recherche. France, Monde, Nucléaire.">
+<meta name="robots" content="index, follow">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
+<style>
+:root{
+  --ink:#1f2328;      /* encre principale */
+  --ink-soft:#57606a; /* texte secondaire */
+  --ink-faint:#8b949e;/* texte très atténué */
+  --line:#d0d7de;     /* filets / bordures */
+  --line-soft:#eaeef2;
+  --accent:#d9570f;   /* orange Ranpi */
+  --code:#f6f8fa;     /* fond type bloc-code */
+  --max:44rem;        /* largeur de lecture */
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0;padding:0;
+  background:#fff;
+  color:var(--ink);
+  font-family:ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+  font-size:16px;line-height:1.6;
+  -webkit-font-smoothing:antialiased;
+}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+
+/* ---- header ---- */
+.head{
+  border-bottom:1px solid var(--line-soft);
+  background:rgba(255,255,255,.92);
+  backdrop-filter:blur(6px);
+  position:sticky;top:0;z-index:10;
+}
+.head-in{max-width:var(--max);margin:0 auto;padding:14px 20px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.brand{font-size:18px;font-weight:700;letter-spacing:-.01em;white-space:nowrap}
+.brand .mark{color:var(--accent)}
+.tabs{display:flex;gap:4px;margin-left:auto;flex-wrap:wrap}
+.tab{
+  font-size:14px;padding:5px 12px;border-radius:6px;cursor:pointer;
+  color:var(--ink-soft);background:none;border:1px solid transparent;font-weight:500;
+  transition:.12s;
+}
+.tab:hover{color:var(--ink);background:var(--code)}
+.tab.active{color:var(--accent);background:var(--code);border-color:var(--line)}
+.tab .cnt{font-size:11px;color:var(--ink-faint);margin-left:5px;font-variant-numeric:tabular-nums}
+
+/* ---- contenu ---- */
+.wrap{max-width:var(--max);margin:0 auto;padding:28px 20px 80px}
+.generated{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;color:var(--ink-faint);margin:0 0 6px}
+h1{font-size:26px;line-height:1.25;font-weight:700;margin:4px 0 8px;letter-spacing:-.015em}
+h1 .hash{color:var(--accent)}
+.subtitle{color:var(--ink-soft);font-size:15px;margin:0 0 24px}
+
+/* recherche */
+.searchbox{display:flex;align-items:center;gap:10px;border:1px solid var(--line);border-radius:8px;padding:10px 14px;margin-bottom:28px;background:#fff;transition:.15s}
+.searchbox:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px rgba(217,87,15,.12)}
+.searchbox .prompt{color:var(--accent);font-family:ui-monospace,monospace;font-weight:700}
+.searchbox input{flex:1;border:none;outline:none;font-size:15px;color:var(--ink);background:transparent}
+.searchbox .clear{background:none;border:none;color:var(--ink-faint);cursor:pointer;font-size:16px;padding:0 2px}
+.searchbox .clear:hover{color:var(--ink)}
+
+/* filtre sources */
+.filters{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:26px}
+.src{font-size:13px;padding:3px 11px;border-radius:999px;border:1px solid var(--line);background:#fff;color:var(--ink-soft);cursor:pointer;transition:.12s}
+.src:hover{border-color:var(--ink-soft);color:var(--ink)}
+.src.active{background:var(--ink);color:#fff;border-color:var(--ink)}
+.src .n{opacity:.55;margin-left:4px;font-size:11px}
+
+/* section d'articles */
+.section{margin-bottom:44px}
+.section-head{display:flex;align-items:baseline;gap:10px;border-bottom:2px solid var(--ink);padding-bottom:6px;margin-bottom:4px}
+.section-head h2{font-size:18px;font-weight:700;margin:0;letter-spacing:-.01em}
+.section-head h2 .hash{color:var(--accent)}
+.section-head .count{font-size:12px;color:var(--ink-faint);font-variant-numeric:tabular-nums}
+
+/* article = bloc markdown */
+.article{padding:18px 0;border-bottom:1px solid var(--line-soft)}
+.article:last-child{border-bottom:none}
+.article .meta{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ink-faint);margin-bottom:6px;flex-wrap:wrap}
+.article .src-name{color:var(--accent);font-weight:600}
+.article .dot{opacity:.5}
+.article .lang{font-size:10px;color:var(--ink-soft);border:1px solid var(--line);border-radius:4px;padding:0 5px;font-family:ui-monospace,monospace;letter-spacing:.5px}
+.article h3{margin:0 0 4px;font-size:19px;font-weight:650;line-height:1.4;letter-spacing:-.01em}
+.article h3 a{color:var(--ink)}
+.article h3 a:hover{color:var(--accent);text-decoration:none}
+.article .sum{color:var(--ink-soft);font-size:14.5px;margin:0}
+
+/* état vide / erreur / chargement */
+.status{color:var(--ink-soft);text-align:center;padding:60px 20px;font-size:15px}
+.err{color:#cf222e;text-align:center;padding:50px 20px}
+
+footer{border-top:1px solid var(--line-soft);padding:26px 20px 40px;text-align:center;color:var(--ink-faint);font-size:12.5px}
+footer a{color:var(--ink-soft)}
+
+@media(max-width:640px){
+  .head-in{gap:10px}
+  .tabs{margin-left:0;width:100%;order:3}
+  .brand{order:1}.tabs{order:2}
+  .wrap{padding-top:20px}
+  h1{font-size:22px}
+  .article h3{font-size:17px}
+}
+</style>
+</head>
+<body>
+<header class="head">
+  <div class="head-in">
+    <div class="brand"><span class="mark">⚡</span> Ranpi News</div>
+    <nav class="tabs" id="tabs" aria-label="Rubriques"></nav>
+  </div>
+</header>
+
+<div class="wrap">
+  <p class="generated" id="generated"></p>
+  <h1><span class="hash">#</span> <span id="title">Actualités</span></h1>
+  <p class="subtitle" id="subtitle"></p>
+
+  <div class="searchbox" role="search">
+    <span class="prompt">/</span>
+    <input id="searchInput" type="text" placeholder="Rechercher un titre ou mot-clé…" autocomplete="off" aria-label="Rechercher">
+    <button class="clear" id="clearBtn" aria-label="Effacer">✕</button>
+  </div>
+
+  <div class="filters" id="filters"></div>
+
+  <main id="content"></main>
+</div>
+
+<footer>
+  <p>⚡ Ranpi News — titres en VO, agrégés à partir de flux RSS gratuits.</p>
+  <p>Collecte automatique horaire · <a href="#" id="ghLink">Source sur GitHub</a></p>
+</footer>
+
+<script>
+"use strict";
+const GROUPS_ORDER = ["France", "Monde", "Nucleaire"];
+let DATA = null;         // data.json complet
+let state = { group: null, source: null, q: "" };
+const $ = s => document.querySelector(s);
+
+// ---------- helpers ----------
+function esc(s){return (s||"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
+function fmtDate(iso){
+  if(!iso)return"";
+  try{return new Date(iso).toLocaleDateString("fr-FR",{day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit"});}catch{return"";}
+}
+function timeAgo(iso){
+  if(!iso)return"";
+  const s=(Date.now()-new Date(iso).getTime())/1000;
+  if(s<60)return"à l'instant";
+  if(s<3600)return"il y a "+Math.floor(s/60)+" min";
+  if(s<86400)return"il y a "+Math.floor(s/3600)+" h";
+  if(s<604800)return"il y a "+Math.floor(s/86400)+" j";
+  return fmtDate(iso);
+}
+
+// ---------- chargement ----------
+async function load(){
+  try{
+    const r=await fetch("data.json?ts="+Date.now());
+    if(!r.ok)throw new Error("HTTP "+r.status);
+    DATA=await r.json();
+    renderTabs();
+    renderHeader();
+    renderFilters();
+    apply();
+  }catch(e){
+    $("#content").innerHTML=`<div class="err">Erreur de chargement : ${esc(e.message)}</div>`;
+  }
+}
+
+// ---------- onglets ----------
+function renderTabs(){
+  $("#tabs").innerHTML=DATA.groups.map(g=>{
+    const act=g.group===state.group?"active":"";
+    return `<button class="tab ${act}" data-g="${g.group}">${esc(g.label)}<span class="cnt">${g.items.length}</span></button>`;
+  }).join("");
+  document.querySelectorAll(".tab").forEach(b=>{
+    b.addEventListener("click",()=>{
+      state.group=b.dataset.g;state.source=null;state.q="";
+      $("#searchInput").value="";
+      renderTabs();renderHeader();renderFilters();apply();
+    });
+  });
+}
+
+function renderHeader(){
+  const g=DATA.groups.find(x=>x.group===state.group)||DATA.groups[0];
+  $("#title").textContent=g?g.label:"Actualités";
+  $("#subtitle").textContent=g?g.description:"";
+  $("#generated").textContent="maj "+fmtDate(DATA.generated||null);
+}
+
+// ---------- filtres sources ----------
+function renderFilters(){
+  if(!state.group){$("#filters").innerHTML="";return;}
+  const g=DATA.groups.find(x=>x.group===state.group);
+  const counts={};g.items.forEach(i=>counts[i.source]=(counts[i.source]||0)+1);
+  const names=Object.keys(counts);
+  const html=['<button class="src '+(state.source===null?"active":"")+'" data-src="__all">Tous<span class="n">'+g.items.length+"</span></button>"].concat(
+    names.map(n=>'<button class="src '+(state.source===n?"active":"")+'" data-src="'+esc(n)+'">'+esc(n)+'<span class="n">'+counts[n]+"</span></button>")
+  ).join("");
+  $("#filters").innerHTML=html;
+  document.querySelectorAll(".src").forEach(b=>{
+    b.addEventListener("click",()=>{state.source=b.dataset.src==="__all"?null:b.dataset.src;renderFilters();apply();});
+  });
+}
+
+// ---------- filtrage + rendu ----------
+function filteredItems(){
+  const g=DATA.groups.find(x=>x.group===state.group);
+  if(!g)return[];
+  let items=g.items;
+  if(state.source)items=items.filter(i=>i.source===state.source);
+  if(state.q){
+    const q=state.q.toLowerCase();
+    items=items.filter(i=>(i.title||"").toLowerCase().includes(q)||(i.summary||"").toLowerCase().includes(q)||(i.source||"").toLowerCase().includes(q));
+  }
+  return items;
+}
+
+function apply(){
+  const items=filteredItems();
+  const g=DATA.groups.find(x=>x.group===state.group);
+  if(!items.length){
+    $("#content").innerHTML=`<div class="status">Aucun résultat${state.q?" pour « "+esc(state.q)+" »":""}.</div>`;
+    return;
+  }
+  $("#content").innerHTML=`<section class="section">
+    <div class="section-head"><h2><span class="hash">#</span> ${esc(g.label)}</h2><span class="count">${items.length} article${items.length>1?"s":""}</span></div>
+    ${items.map(artHTML).join("")}
+  </section>`;
+}
+
+function artHTML(it){
+  const lang=it.lang==="en"?'<span class="lang">EN</span>':"";
+  const sum=it.summary?`<p class="sum">${esc(it.summary)}</p>`:"";
+  return `<article class="article">
+    <div class="meta"><span class="src-name">${esc(it.source)}</span><span class="dot">·</span><span>${timeAgo(it.published)}</span>${lang?"<span>"+lang+"</span>":""}</div>
+    <h3><a href="${esc(it.url)}" target="_blank" rel="noopener noreferrer">${esc(it.title)}</a></h3>
+    ${sum}
+  </article>`;
+}
+
+// ---------- recherche ----------
+function bindSearch(){
+  let t=null;
+  $("#searchInput").addEventListener("input",e=>{
+    clearTimeout(t);
+    t=setTimeout(()=>{state.q=e.target.value.trim();apply();},200);
+  });
+  $("#clearBtn").addEventListener("click",()=>{$("#searchInput").value="";state.q="";apply();$("#searchInput").focus();});
+  document.addEventListener("keydown",e=>{
+    if(e.key==="/"&&document.activeElement!==$("#searchInput")){e.preventDefault();$("#searchInput").focus();}
+  });
+}
+
+$("#ghLink").addEventListener("click",e=>{e.preventDefault();window.open("https://github.com/Piwoski/news-ranpi","_blank");});
+bindSearch();
+load();
+</script>
+</body>
+</html>

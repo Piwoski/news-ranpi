@@ -1,0 +1,36 @@
+{
+  "groups": {
+    "France": {
+      "label": "France",
+      "description": "Actualités nationales françaises",
+      "color": "#0055a4",
+      "feeds": [
+        { "id": "lemonde",     "name": "Le Monde",         "url": "https://www.lemonde.fr/rss/une.xml",                 "lang": "fr" },
+        { "id": "figaro",      "name": "Le Figaro",        "url": "https://www.lefigaro.fr/rss/figaro_actualites.xml",   "lang": "fr" },
+        { "id": "franceinfo",  "name": "France Info",      "url": "https://www.francetvinfo.fr/titres.rss",              "lang": "fr" }
+      ]
+    },
+    "Monde": {
+      "label": "Monde",
+      "description": "Actualités internationales (hors France)",
+      "color": "#009e66",
+      "feeds": [
+        { "id": "france24",    "name": "France 24",        "url": "https://www.france24.com/fr/rss",            "lang": "fr" },
+        { "id": "rfi",         "name": "RFI",              "url": "https://www.rfi.fr/fr/rss",                  "lang": "fr" },
+        { "id": "courrierint", "name": "Courrier Int.",    "url": "https://www.courrierinternational.com/feed/all/rss.xml", "lang": "fr" },
+        { "id": "bbcworld",    "name": "BBC World",        "url": "https://feeds.bbci.co.uk/news/world/rss.xml","lang": "en" },
+        { "id": "guardian",    "name": "The Guardian",     "url": "https://www.theguardian.com/world/rss",       "lang": "en" }
+      ]
+    },
+    "Nucleaire": {
+      "label": "Nucléaire",
+      "description": "Nucléaire France & international",
+      "color": "#c9a227",
+      "feeds": [
+        { "id": "asnr",     "name": "ASNR (France)",       "url": "https://www.asnr.fr/rss.xml",                        "lang": "fr", "watch": true },
+        { "id": "wnn",      "name": "World Nuclear News",  "url": "https://www.world-nuclear-news.org/rss",              "lang": "en" },
+        { "id": "powermag", "name": "Power Magazine",      "url": "https://www.powermag.com/feed/",                      "lang": "en" }
+      ]
+    }
+  }
+}
