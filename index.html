@@ -6,7 +6,7 @@
 <title>Ranpi News — France · Monde · Nucléaire</title>
 <meta name="description" content="Agrégateur d'actualités : titres en VO, filtres par source et recherche. France, Monde, Nucléaire.">
 <meta name="robots" content="index, follow">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>☢️</text></svg>">
 <style>
 :root{
   --ink:#1f2328;      /* encre principale */
@@ -112,7 +112,7 @@ footer a{color:var(--ink-soft)}
 <body>
 <header class="head">
   <div class="head-in">
-    <div class="brand"><span class="mark">⚡</span> Ranpi News</div>
+    <div class="brand"><span class="mark">☢️</span> Ranpi News</div>
     <nav class="tabs" id="tabs" aria-label="Rubriques"></nav>
   </div>
 </header>
@@ -134,7 +134,7 @@ footer a{color:var(--ink-soft)}
 </div>
 
 <footer>
-  <p>⚡ Ranpi News — titres en VO, agrégés à partir de flux RSS gratuits.</p>
+  <p>☢️ Ranpi News — titres en VO, agrégés à partir de flux RSS gratuits.</p>
   <p>Collecte automatique horaire · <a href="#" id="ghLink">Source sur GitHub</a></p>
 </footer>
 
@@ -176,15 +176,20 @@ async function load(){
   }
 }
 
-// ---------- onglets ----------
+// ---------- onglets (Toutes + 3 rubriques) ----------
 function renderTabs(){
-  $("#tabs").innerHTML=DATA.groups.map(g=>{
-    const act=g.group===state.group?"active":"";
-    return `<button class="tab ${act}" data-g="${g.group}">${esc(g.label)}<span class="cnt">${g.items.length}</span></button>`;
-  }).join("");
+  const total=DATA.groups.reduce((n,g)=>n+g.items.length,0);
+  const allAct=!state.group?"active":"";
+  const html='<button class="tab '+allAct+'" data-g="__all">Toutes<span class="cnt">'+total+"</span></button>"+
+    DATA.groups.map(g=>{
+      const act=g.group===state.group?"active":"";
+      return `<button class="tab ${act}" data-g="${g.group}">${esc(g.label)}<span class="cnt">${g.items.length}</span></button>`;
+    }).join("");
+  $("#tabs").innerHTML=html;
   document.querySelectorAll(".tab").forEach(b=>{
     b.addEventListener("click",()=>{
-      state.group=b.dataset.g;state.source=null;state.q="";
+      state.group=b.dataset.g==="__all"?null:b.dataset.g;
+      state.source=null;state.q="";
       $("#searchInput").value="";
       renderTabs();renderHeader();renderFilters();apply();
     });
@@ -192,13 +197,17 @@ function renderTabs(){
 }
 
 function renderHeader(){
-  const g=DATA.groups.find(x=>x.group===state.group)||DATA.groups[0];
-  $("#title").textContent=g?g.label:"Actualités";
-  $("#subtitle").textContent=g?g.description:"";
+  const title = state.group
+    ? (DATA.groups.find(x=>x.group===state.group)||{}).label
+    : "Toutes les actualités";
+  $("#title").textContent=title||"Actualités";
+  $("#subtitle").textContent = state.group
+    ? (DATA.groups.find(x=>x.group===state.group)||{}).description
+    : "France · Monde · Nucléaire — titres en VO.";
   $("#generated").textContent="maj "+fmtDate(DATA.generated||null);
 }
 
-// ---------- filtres sources ----------
+// ---------- filtres sources (pour le groupe actif) ----------
 function renderFilters(){
   if(!state.group){$("#filters").innerHTML="";return;}
   const g=DATA.groups.find(x=>x.group===state.group);
@@ -214,9 +223,7 @@ function renderFilters(){
 }
 
 // ---------- filtrage + rendu ----------
-function filteredItems(){
-  const g=DATA.groups.find(x=>x.group===state.group);
-  if(!g)return[];
+function filterGroup(g){
   let items=g.items;
   if(state.source)items=items.filter(i=>i.source===state.source);
   if(state.q){
@@ -227,16 +234,37 @@ function filteredItems(){
 }
 
 function apply(){
-  const items=filteredItems();
-  const g=DATA.groups.find(x=>x.group===state.group);
-  if(!items.length){
+  if(state.group){
+    // un seul groupe affiché
+    const g=DATA.groups.find(x=>x.group===state.group);
+    const items=filterGroup(g);
+    if(!items.length){
+      $("#content").innerHTML=`<div class="status">Aucun résultat${state.q?" pour « "+esc(state.q)+" »":""}.</div>`;
+      return;
+    }
+    $("#content").innerHTML=`<section class="section">
+      <div class="section-head"><h2><span class="hash">#</span> ${esc(g.label)}</h2><span class="count">${items.length} article${items.length>1?"s":""}</span></div>
+      ${items.map(artHTML).join("")}
+    </section>`;
+    return;
+  }
+  // mode "Toutes" : toutes les sections, dans l'ordre des groupes
+  let any=false;
+  let html="";
+  for(const g of DATA.groups){
+    const items=filterGroup(g);
+    if(!items.length)continue;
+    any=true;
+    html+=`<section class="section">
+      <div class="section-head"><h2><span class="hash">#</span> ${esc(g.label)}</h2><span class="count">${items.length} article${items.length>1?"s":""}</span></div>
+      ${items.map(artHTML).join("")}
+    </section>`;
+  }
+  if(!any){
     $("#content").innerHTML=`<div class="status">Aucun résultat${state.q?" pour « "+esc(state.q)+" »":""}.</div>`;
     return;
   }
-  $("#content").innerHTML=`<section class="section">
-    <div class="section-head"><h2><span class="hash">#</span> ${esc(g.label)}</h2><span class="count">${items.length} article${items.length>1?"s":""}</span></div>
-    ${items.map(artHTML).join("")}
-  </section>`;
+  $("#content").innerHTML=html;
 }
 
 function artHTML(it){

@@ -46,14 +46,28 @@ function decodeEntities(s) {
 function stripTags(s) { return (s || "").replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim(); }
 function cdata(s) { return (s || "").replace(/<!\[CDATA\[(.*?)\]\]>/gs, "$1"); }
 
+// Décodage des entités HTML en boucle (gère le double-encodage type &amp;#039;) puis suppression des balises
+function decodeAll(s) {
+  if (!s) return "";
+  let prev;
+  let cur = s;
+  // itération jusqu'à stabilité (max 5 passes) pour les entités imbriquées
+  for (let i = 0; i < 5; i++) {
+    prev = cur;
+    cur = decodeEntities(prev);
+    if (cur === prev) break;
+  }
+  return stripTags(cur);
+}
+
 function extractItemFields(raw, feedId) {
-  const title = decodeEntities(stripTags(cdata((raw.match(/<title(?:\s[^>]*)?>(.*?)<\/title>/s) || [])[1] || "")));
+  const title = decodeAll(cdata((raw.match(/<title(?:\s[^>]*)?>(.*?)<\/title>/s) || [])[1] || ""));
   let link = cdata((raw.match(/<link(?:\s[^>]*)?>(.*?)<\/link>/s) || [])[1] || "");
   link = decodeEntities(link.replace(/<[^>]*>/g, "").trim());
   const linkAttr = ((raw.match(/<link[^>]*href="([^"]+)"/) || [])[1] || "").trim();
   if (!link) link = linkAttr;
-  const desc = decodeEntities(stripTags(cdata((raw.match(/<description(?:\s[^>]*)?>(.*?)<\/description>/s) || [])[1] || "")));
-  const content = decodeEntities(stripTags(cdata((raw.match(/<content:encoded(?:\s[^>]*)?>(.*?)<\/content:encoded>/s) || [])[1] || "")));
+  const desc = decodeAll(cdata((raw.match(/<description(?:\s[^>]*)?>(.*?)<\/description>/s) || [])[1] || ""));
+  const content = decodeAll(cdata((raw.match(/<content:encoded(?:\s[^>]*)?>(.*?)<\/content:encoded>/s) || [])[1] || ""));
   const pubRaw = (raw.match(/<pubDate[^>]*>(.*?)<\/pubDate>/s) || raw.match(/<dc:date[^>]*>(.*?)<\/dc:date>/s) || [])[1] || "";
   const pubDate = pubRaw ? Date.parse(pubRaw.trim()) : null;
   return {
@@ -77,8 +91,13 @@ function parseFeed(xml, feedId) {
 function normalizeKey(u) { try { const x = new URL(u); return (x.hostname + x.pathname).replace(/\/$/, "").toLowerCase(); } catch { return u; } }
 function isRealAsnrArticle(t, u) {
   const u2 = (u || "").toLowerCase();
-  if (/avis.?d.?expertise/.test(t) && /^\d{4}$/.test((t.match(/\d{4}/) || [""])[0] || "")) return false;
-  if (/avis.?d.?expertise.*(janvier|février|mars|avril|mai|juin|juillet|août|septembre|octobre|novembre|décembre)/.test(t)) return false;
+  const isListing = /avis.?d.?expertise/i.test(t); // case-insensitive (le titre commence par "Avis")
+  // pages de listing annuel "Avis d'expertise de l'ASNR - 2026"
+  if (isListing && /^\d{4}$/.test((t.match(/\d{4}/) || [""])[0] || "")) return false;
+  // pages de listing mensuel "Avis d'expertise ... de mai 2026"
+  if (/avis.?d.?expertise.*(janvier|février|mars|avril|mai|juin|juillet|août|septembre|octobre|novembre|décembre)/i.test(t)) return false;
+  // les URL d'avis d'expertise sont des listings, pas des news
+  if (/avis-dexpertise/i.test(u2)) return false;
   if (u2.includes("/actualites/")) return true;
   if (u2.includes("/agenda/")) return false;
   return true;
