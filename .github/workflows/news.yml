@@ -1,5 +1,7 @@
 name: Collecter et publier
 
+# Force re-indexation du workflow par GitHub Actions (cache triggers)
+
 # Toutes les heures (minute 0) + déclenchement manuel disponible
 on:
   schedule:
