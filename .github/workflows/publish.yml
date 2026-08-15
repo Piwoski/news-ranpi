@@ -1,14 +1,11 @@
 name: Publier (collecte + deploy)
 
-# Force re-indexation du workflow par GitHub Actions (cache triggers)
-
-# Toutes les heures (minute 0) + déclenchement manuel disponible
+# Toutes les heures + déclenchement manuel
 on:
   schedule:
     - cron: "0 * * * *"
   workflow_dispatch:
 
-# Évite les courses entre deux runs (un seul à la fois, le plus récent gagne)
 concurrency:
   group: publish
   cancel-in-progress: false
@@ -16,10 +13,8 @@ concurrency:
 permissions:
   contents: write
   pages: write
-  id-token: ***
+  id-token: write
 
-# Un SEUL job : collecte PUIS déploiement dans le même runner.
-# Garantit que l'artefact publié est exactement l'état final (data.json + code).
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -27,7 +22,7 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - name: Cloner le repo
+      - name: Cloner
         uses: actions/checkout@v4
 
       - name: Node
@@ -35,10 +30,10 @@ jobs:
         with:
           node-version: "22"
 
-      - name: Lancer la collecte (génère data.json)
+      - name: Collecte (genere data.json)
         run: node collector.js
 
-      - name: Committer data.json s'il a changé
+      - name: Committer data.json si change
         run: |
           if [ -n "$(git status --porcelain data.json)" ]; then
             git config user.name "Ranpi Bot"
@@ -46,21 +41,16 @@ jobs:
             git add data.json
             git commit -m "collecte: $(date -u +%Y-%m-%dT%H:%MZ)"
             git push
-            echo "COLLECTE_PUSHEE=oui"
-          else
-            echo "COLLECTE_PUSHEE=non (pas de changement)"
           fi
-        env:
-          GITHUB_TOKEN: *** secrets.GITHUB_TOKEN }}
 
       - name: Configurer Pages
         uses: actions/configure-pages@v5
 
-      - name: Uploader l'artefact (racine du site)
+      - name: Uploader artefact (racine)
         uses: actions/upload-pages-artifact@v3
         with:
           path: "."
 
-      - name: Déployer sur GitHub Pages
+      - name: Deployer sur Pages
         id: deployment
         uses: actions/deploy-pages@v4
