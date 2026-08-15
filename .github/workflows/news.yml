@@ -14,11 +14,16 @@ concurrency:
 permissions:
   contents: write
   pages: write
-  id-token: write
+  id-token: ***
 
+# Un SEUL job : collecte PUIS déploiement dans le même runner.
+# Garantit que l'artefact publié est exactement l'état final (data.json + code).
 jobs:
-  collect:
+  build:
     runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Cloner le repo
         uses: actions/checkout@v4
@@ -31,7 +36,7 @@ jobs:
       - name: Lancer la collecte (génère data.json)
         run: node collector.js
 
-      - name: Mettre à jour data.json si changé + pousser
+      - name: Committer data.json s'il a changé
         run: |
           if [ -n "$(git status --porcelain data.json)" ]; then
             git config user.name "Ranpi Bot"
@@ -44,18 +49,7 @@ jobs:
             echo "COLLECTE_PUSHEE=non (pas de changement)"
           fi
         env:
-          # Token automatique fourni par GitHub, scope limited au repo courant
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-  publish:
-    needs: collect
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - name: Cloner
-        uses: actions/checkout@v4
+          GITHUB_TOKEN: *** secrets.GITHUB_TOKEN }}
 
       - name: Configurer Pages
         uses: actions/configure-pages@v5
