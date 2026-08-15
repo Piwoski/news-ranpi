@@ -1,4 +1,4 @@
-name: Collecter et publier
+name: Publier (collecte + deploy)
 
 # Force re-indexation du workflow par GitHub Actions (cache triggers)
 
