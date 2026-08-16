@@ -6,6 +6,7 @@
 <title>Ranpi News — France · Monde · Nucléaire</title>
 <meta name="description" content="Agrégateur d'actualités : titres en VO, filtres par source et recherche. France, Monde, Nucléaire.">
 <meta name="robots" content="index, follow">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>☢️</text></svg>">
 <style>
 :root{
@@ -147,6 +148,11 @@ const $ = s => document.querySelector(s);
 
 // ---------- helpers ----------
 function esc(s){return (s||"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
+// Ne produit un lien que pour des URLs HTTP(S) ; rejette javascript:, data:, file:, vbscript:, …
+function safeHttpUrl(value){
+  if(!value)return null;
+  try{const u=new URL(value);return (u.protocol==="https:"||u.protocol==="http:")?u.href:null;}catch{return null;}
+}
 function fmtDate(iso){
   if(!iso)return"";
   try{return new Date(iso).toLocaleDateString("fr-FR",{day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit"});}catch{return"";}
@@ -248,31 +254,36 @@ function apply(){
     </section>`;
     return;
   }
-  // mode "Toutes" : toutes les sections, dans l'ordre des groupes
+  // mode "Toutes" : tous les articles mélangés, dans l'ordre chronologique
   let any=false;
-  let html="";
+  let items=[];
   for(const g of DATA.groups){
-    const items=filterGroup(g);
-    if(!items.length)continue;
-    any=true;
-    html+=`<section class="section">
-      <div class="section-head"><h2><span class="hash">#</span> ${esc(g.label)}</h2><span class="count">${items.length} article${items.length>1?"s":""}</span></div>
-      ${items.map(artHTML).join("")}
-    </section>`;
+    items=items.concat(filterGroup(g));
   }
+  any=items.length>0;
   if(!any){
     $("#content").innerHTML=`<div class="status">Aucun résultat${state.q?" pour « "+esc(state.q)+" »":""}.</div>`;
     return;
   }
+  // tri chronologique décroissant (le plus récent en premier)
+  items.sort((a,b)=>new Date(b.published)-new Date(a.published));
+  const html=`<section class="section">
+    <div class="section-head"><h2><span class="hash">#</span> Toutes les actualités</h2><span class="count">${items.length} article${items.length>1?"s":""}</span></div>
+    ${items.map(artHTML).join("")}
+  </section>`;
   $("#content").innerHTML=html;
 }
 
 function artHTML(it){
   const lang=it.lang==="en"?'<span class="lang">EN</span>':"";
   const sum=it.summary?`<p class="sum">${esc(it.summary)}</p>`:"";
+  const safeUrl=safeHttpUrl(it.url);
+  const title=safeUrl
+    ? `<a href="${esc(safeUrl)}" target="_blank" rel="noopener noreferrer">${esc(it.title)}</a>`
+    : esc(it.title); // URL invalide/malsaine : titre en texte simple, non cliquable
   return `<article class="article">
     <div class="meta"><span class="src-name">${esc(it.source)}</span><span class="dot">·</span><span>${timeAgo(it.published)}</span>${lang?"<span>"+lang+"</span>":""}</div>
-    <h3><a href="${esc(it.url)}" target="_blank" rel="noopener noreferrer">${esc(it.title)}</a></h3>
+    <h3>${title}</h3>
     ${sum}
   </article>`;
 }

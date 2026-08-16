@@ -1,0 +1,5 @@
+Contact: mailto:security@ranpi.fr
+Canonical: https://news.ranpi.fr/.well-known/security.txt
+Preferred-Languages: fr, en
+Expires: 2027-08-15T00:00:00Z
+Policy: https://news.ranpi.fr/.well-known/security.txt

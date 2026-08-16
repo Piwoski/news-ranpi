@@ -37,7 +37,7 @@ function fetchUrl(url, maxBytes = 2 * 1024 * 1024, timeoutMs = 25000) {
 // ---------- Parsing XML minimal ----------
 function decodeEntities(s) {
   if (!s) return "";
-  const map = { amp: "&", lt: "<", gt: ">", quot: "\"", apos: "'", "#39": "'" };
+  const map = { amp: "&", lt: "<", gt: ">", quot: "\"", apos: "'", "#39": "'", nbsp: " ", "#160": " ", rsquo: "'", lsquo: "'", ldquo: "\"", rdquo: "\"", hellip: "…", ndash: "–", mdash: "—", eacute: "é", agrave: "à", ugrave: "ù", egrave: "è", ccedil: "ç", aelig: "æ", oelig: "œ" };
   return s.replace(/&(#?[a-zA-Z0-9]+);/g, (m, e) => {
     if (e[0] === "#") { const c = e[1] === "x" ? parseInt(e.slice(2), 16) : parseInt(e.slice(1), 10); return isNaN(c) ? m : String.fromCodePoint(c); }
     return map[e.toLowerCase()] ?? m;
@@ -80,11 +80,23 @@ function extractItemFields(raw, feedId) {
   };
 }
 
+// Autorise uniquement les URLs HTTP/HTTPS (rejette javascript:, data:, file:, vbscript:, …)
+// Utilisée à l'ingestion (défense en profondeur) : les URLs malsaines ne doivent jamais entrer dans data.json.
+function safeHttpUrl(value) {
+  if (!value) return "";
+  let u;
+  try { u = new URL(value); } catch { return ""; }
+  if (u.protocol !== "https:" && u.protocol !== "http:") return "";
+  return u.href;
+}
+
 function parseFeed(xml, feedId) {
   if (!xml || !xml.includes("<")) return [];
   let items = [...xml.matchAll(/<item[\s>](.*?)<\/item>/gs)].map(m => m[1]);
   if (!items.length) items = [...xml.matchAll(/<entry[\s>](.*?)<\/entry>/gs)].map(m => m[1]);
-  return items.map(r => extractItemFields(r, feedId)).filter(it => it.url);
+  return items
+    .map(r => extractItemFields(r, feedId))
+    .filter(it => safeHttpUrl(it.url)); // rejette les protocoles actifs hors http/https
 }
 
 // ---------- Nettoyage ASNR (news réelles uniquement) ----------
